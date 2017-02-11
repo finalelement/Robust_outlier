@@ -1,0 +1,39 @@
+function mean_std_before_after_rodish_landman_test
+
+    scan1_corr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/corrected_501.nii');
+    scan2_corr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/corrected_1201.nii');
+    scan3_corr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/corrected_1901.nii');
+    scan4_corr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/corrected_2601.nii');
+
+    scan1_uncorr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/uncorrected_501.nii');
+    scan2_uncorr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/uncorrected_1201.nii');
+    scan3_uncorr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/uncorrected_1901.nii');
+    scan4_uncorr_nii = load_untouch_nii('/fs4/masi/nathv/qball_robust_experiment/uncorrected_2601.nii');
+
+    % Mean of slice 36, gradient volume 55 - Uncorrected Data
+    slice = 36;
+    ng = 55;
+    s1_uncorr_slice = scan1_uncorr_nii.img(:,:,slice,ng);
+    s2_uncorr_slice = scan2_uncorr_nii.img(:,:,slice,ng);
+    s3_uncorr_slice = scan3_uncorr_nii.img(:,:,slice,ng);
+    s4_uncorr_slice = scan4_uncorr_nii.img(:,:,slice,ng);
+    
+    uncorr_mean = (s1_uncorr_slice + s2_uncorr_slice + s3_uncorr_slice + s4_uncorr_slice)/4; 
+
+    % Mean of slice 36, gradient volume 55 - Corrected Data
+    s1_corr_slice = scan1_corr_nii.img(:,:,slice,ng);
+    s2_corr_slice = scan2_corr_nii.img(:,:,slice,ng);
+    s3_corr_slice = scan3_corr_nii.img(:,:,slice,ng);
+    s4_corr_slice = scan4_corr_nii.img(:,:,slice,ng);
+    
+    corr_mean = (s1_corr_slice + s2_corr_slice + s3_corr_slice + s4_corr_slice)/4; 
+    
+    % Standard Deviation of Uncorrected Data
+    uncorr_cat_matrix = cat(3,s1_uncorr_slice,s2_uncorr_slice,s3_uncorr_slice,s4_uncorr_slice);
+    uncorr_std = std(uncorr_cat_matrix,[],3);
+    
+    % Standard Deviation of Corrected Data
+    corr_cat_matrix = cat(3,s1_corr_slice,s2_corr_slice,s3_corr_slice,s4_corr_slice);
+    corr_std = std(corr_cat_matrix,[],3);
+    
+end

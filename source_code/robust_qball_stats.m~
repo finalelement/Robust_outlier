@@ -1,0 +1,89 @@
+function robust_qball_stats
+
+    % Loading 4d nifti data, bvals and bvecs
+    nii = load_untouch_nii('dwmri.nii');
+    bvals = dlmread('dwmri.bval');
+    bvecs = dlmread('dwmri.bvec');
+    mask = load_untouch_nii('mask.nii');
+    mask = logical(mask.img);
+    % Removing the b0 data from the loaded data. Q-ball does not deal with
+    % the b0's
+    req_4d_dwmri = nii.img(:,:,:,2:97);
+    req_bvals = bvals(:,2:97);
+    req_bvecs = bvecs(:,2:97);
+    % Feeding cleaned data to qball fit
+    
+    % We can also provide a mask as an input as the last input parameter.
+    % For now it has been left out.
+    lmax = 6;
+    lambda = 0.006;
+    
+    % L
+    P0 = []; Laplac2 = [];
+    for L=0:2:lmax
+        for m=-L:L
+            Pnm = legendre(L, 0); factor1 = Pnm(1);
+            P0 = [P0; factor1];
+            Laplac2 = [Laplac2; (L^2)*(L + 1)^2];
+        end
+    end
+    L = diag(Laplac2);
+    
+    [basis,~,~] = qball.lib.spherical_harmonics.construct_SH_basis(lmax,req_bvecs',2,'real');
+    
+    flags = 1;
+    counter = 0;
+    %output = update(req_4d_dwmri,basis,lambda,L,mask,return_flag,counter);
+    
+    while(flags ~= 0)
+        sh_dwi_reg = zeros(size(req_4d_dwmri));
+        threshold = 3;
+        display(counter)
+        counter = counter + 1;
+        for i = 1:size(req_4d_dwmri,1)
+            for j = 1:size(req_4d_dwmri,2)
+                for k = 1:size(req_4d_dwmri,3)
+                    if mask(i,j,k)
+                        % Reconstruct signal with spherical harmonic coefficients using regularized fit                   
+                        C = (basis'*basis + lambda*L)\basis'*squeeze(req_4d_dwmri(i,j,k,:));                  
+
+                        % Reconstruct signal
+                        sh_signal = basis*C;
+
+                        % Store it
+                        sh_dwi_reg(i,j,k,:) = sh_signal;
+                    end
+                end
+            end
+        end
+        
+        % initial flag value/ exit condition as well
+        flags = 0;
+        
+        % Calculate residuals
+        residuals = req_4d_dwmri - sh_dwi_reg;
+
+        % Take regular standard deviation or median absolute deviation
+        %maddy = std(residuals,0,4);
+        maddy = mad(residuals,0,4);
+
+        sig_adjusted = zeros(size(req_4d_dwmri));
+        for i = 1:size(req_4d_dwmri,1)
+            for j = 1:size(req_4d_dwmri,2)
+                for k = 1:size(req_4d_dwmri,3)
+                    if mask(i,j,k)
+                        for ng = 1:size(req_4d_dwmri,4)
+                            if (residuals(i,j,k,ng) > threshold*maddy(i,j,k))
+                                sig_adjusted(i,j,k,ng) = threshold*maddy(i,j,k);
+                                return_flag = 0;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        
+        
+    end
+end
